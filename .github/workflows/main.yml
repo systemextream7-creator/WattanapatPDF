@@ -1,0 +1,19 @@
+name: Build Windows installer
+
+on:
+  workflow_dispatch: # เปิดปุ่มสีฟ้าสำหรับกดรันด้วยตัวเอง
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Build Script
+      run: |
+        echo "กำลังเริ่มกระบวนการสร้าง Windows Installer..."
+        # ใส่คำสั่งสร้างตัวติดตั้งโปรเจกต์ของคุณตรงนี้ (เช่น npm run build)
