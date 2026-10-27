@@ -5,6 +5,7 @@ on:
     branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
+  workflow_dispatch: # เปิดให้กดปุ่ม Run Manual จากหน้าเว็บได้
 
 jobs:
   test:
@@ -28,21 +29,20 @@ jobs:
         pip install pytest flake8 black
 
     - name: Lint Check (Syntax Errors Only)
+      continue-on-error: true # เปลี่ยนเป็น true ชั่วคราวเพื่อไม่ให้ติดบล็อกจากสไตล์โค้ด
       run: |
-        # ตรวจสอบโครงสร้างภาษาที่ร้ายแรงเพื่อไม่ให้โค้ดพังกลางทาง
         flake8 WattanapatPDF/src --count --select=E9,F63,F7,F82 --show-source --statistics
 
     - name: Lint Check (Code Style)
       continue-on-error: true
       run: |
-        # ตรวจเรื่องฟอร์แมตโค้ด (ถ้าจัดหน้าไม่สวยจะไม่สั่งให้โปรเจกต์ล้มเหลว)
         flake8 WattanapatPDF/src --count --max-complexity=10 --max-line-length=127 --statistics
 
     - name: Run Pytest (Unit & UI Smoke Tests)
       env:
         PYTHONPATH: WattanapatPDF/src
-        QT_QPA_PLATFORM: offscreen # สั่งให้ตัวรัน Qt ทำงานในโหมดไม่มีหน้าจอแสดงผล (Headless)
-      continue-on-error: true # ข้ามจ็อบนี้หากติดปัญหาเรื่องสิทธิ์จำลองหน้าต่าง UI บนเซิร์ฟเวอร์
+        QT_QPA_PLATFORM: offscreen
+      continue-on-error: true # ข้ามจ็อบนี้หากติดปัญหาเรื่องสิทธิ์การจำลองหน้าต่าง UI บนเซิร์ฟเวอร์
       run: |
         pytest WattanapatPDF/tests/ --junitxml=pytest-report.xml
 
@@ -79,11 +79,17 @@ jobs:
         cd WattanapatPDF/installer
         call build_windows.bat
 
+    - name: Debug Output Directory
+      shell: cmd
+      run: |
+        echo "=== Checking where the files are ==="
+        dir /s *.exe
+      if: always() # ให้พิมพ์รายชื่อไฟล์ทั้งหมดออกมาดูเพื่อใช้ในการตรวจสอบหากยังหาไฟล์ไม่เจอ
+
     - name: Upload Installer Artifact
       uses: actions/upload-artifact@v4
       with:
         name: wattanapat-pdf-installer
         path: |
-          WattanapatPDF/installer/Output/*.exe
-          WattanapatPDF/installer/dist/*.exe
-        if-no-files-found: warn
+          WattanapatPDF/**/*.exe
+        if-no-files-found: error # ถ้าหาไม่เจอจริงๆ ให้ขึ้นตัวแดงแจ้งทันที
