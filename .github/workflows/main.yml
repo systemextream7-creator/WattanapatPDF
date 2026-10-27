@@ -18,7 +18,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11" # แก้ไขจาก python-file เป็น python-version ให้ถูกต้อง
+        python-version: "3.11"
         cache: "pip"
 
     - name: Install dependencies
@@ -27,16 +27,29 @@ jobs:
         pip install -r WattanapatPDF/requirements.txt
         pip install pytest flake8 black
 
-    - name: Lint with flake8
+    - name: Lint with flake8 (Syntax Checks)
       run: |
+        # ตรวจสอบ Error ร้ายแรงทางไวยากรณ์ (ถ้าเจอกลุ่มนี้จะสั่งหยุดทำงานทันที)
         flake8 WattanapatPDF/src --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 WattanapatPDF/src --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-    - name: Run pytest
+    - name: Lint with flake8 (Style Checks)
+      # ปรับให้ข้ามสเตปนี้ไปก่อน (ไม่สั่งพัง) หากเป็นแค่เรื่องการจัดฟอร์แมตเว้นวรรคไม่สวยงาม เพื่อยอมให้ไปรันเทสต่อได้
+      continue-on-error: true 
+      run: |
+        flake8 WattanapatPDF/src --count --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Run pytest (Unit Tests)
       env:
         PYTHONPATH: WattanapatPDF/src
       run: |
-        pytest WattanapatPDF/tests/
+        # รันการทดสอบระบบและบันทึกรายงานผลลัพธ์
+        pytest WattanapatPDF/tests/ --junitxml=pytest-report.xml
+
+    - name: Publish Test Report Summary
+      uses: test-summary/action@v2
+      with:
+        paths: pytest-report.xml
+      if: always() # สั่งให้สร้างรายงานสรุปเสมอไม่ว่าจะรันเทสผ่านหรือไม่ก็ตาม
 
   build:
     name: Build Windows Installer
@@ -50,7 +63,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11" # ตรวจสอบให้มั่นใจว่าเป็น python-version ทั้งสองจ็อบ
+        python-version: "3.11"
         cache: "pip"
 
     - name: Install dependencies
