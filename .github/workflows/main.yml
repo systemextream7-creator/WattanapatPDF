@@ -3,17 +3,45 @@ name: Build Windows installer
 on:
   workflow_dispatch: # เปิดปุ่มสีฟ้าสำหรับกดรันด้วยตัวเอง
   push:
-    branches: [ "main" ]
+    branches: [ "main" ] # รันอัตโนมัติเมื่อมีการ push โค้ดลงสาขา main
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-latest # ใช้เซิร์ฟเวอร์ระบบปฏิบัติการ Windows
 
     steps:
+    # 1. ดึงโค้ดโปรเจกต์ลงเซิร์ฟเวอร์
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Run Build Script
+    # 2. ตั้งค่าระบบ Python
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10' # ปรับเปลี่ยนเวอร์ชันตามที่คุณใช้พัฒนาได้ (เช่น 3.10, 3.11)
+        cache: 'pip' # ช่วยให้การรันครั้งต่อๆ ไปเร็วขึ้น
+
+    # 3. ติดตั้ง Dependencies และตัวสร้าง Executable (PyInstaller)
+    - name: Install dependencies
       run: |
-        echo "กำลังเริ่มกระบวนการสร้าง Windows Installer..."
-        # ใส่คำสั่งสร้างตัวติดตั้งโปรเจกต์ของคุณตรงนี้ (เช่น npm run build)
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        if (Test-Path requirements.txt) { pip install -r requirements.txt }
+
+    # 4. เรียกใช้งานไฟล์ Batch Script สำหรับบิวด์ของโปรเจกต์
+    - name: Build Executable & Installer
+      run: |
+        cd installer
+        .\build_windows.bat
+      shell: cmd
+
+    # 5. รวบรวมไฟล์ติดตั้งส่งออกไปยังระบบดาวน์โหลด Artifacts
+    - name: Upload Installer Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: WattanapatPDF-Windows-Installer # ชื่อไฟล์/โฟลเดอร์ที่จะแสดงบนหน้าเว็บให้ดาวน์โหลด
+        path: |
+          installer/dist/
+          dist/
+          *.exe
+        if-no-files-found: warn
