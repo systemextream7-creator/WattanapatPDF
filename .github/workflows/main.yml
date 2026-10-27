@@ -1,51 +1,77 @@
-name: Build Windows installer
+name: Build and Test Windows Application
 
 on:
-  workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
 
 jobs:
-  build:
+  test:
+    name: Run Tests & Linting
     runs-on: windows-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v4
 
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
-        cache: 'pip'
-
-    - name: Install Inno Setup
-      run: choco install innosetup -y
+        python-file: "3.11" # หรือระบุเวอร์ชันของ Python ที่คุณใช้งานอยู่
+        cache: "pip"
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pyinstaller
-        # เช็คทั้งพาธชั้นนอกและชั้นในเพื่อความชัวร์ในการลง dependencies
-        if (Test-Path requirements.txt) { pip install -r requirements.txt }
-        if (Test-Path WattanapatPDF/requirements.txt) { pip install -r WattanapatPDF/requirements.txt }
+        pip install -r WattanapatPDF/requirements.txt
+        pip install pytest flake8 black # ติดตั้งเครื่องมือสำหรับรัน test และจัดฟอร์แมตโค้ด
 
-    # [ปรับปรุงขั้นตอนนี้] เพิ่มการนำทางเข้าโฟลเดอร์ชั้นใน WattanapatPDF ก่อนสั่งรันสคริปต์
-    - name: Build Executable & Installer
+    - name: Lint with flake8
       run: |
-        cd WattanapatPDF
-        cd installer
-        .\build_windows.bat
+        # ตรวจสอบมาตรฐานของโค้ด (สามารถปรับแต่งกฎได้ตามต้องการ)
+        flake8 WattanapatPDF/src --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 WattanapatPDF/src --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Run pytest
+      env:
+        PYTHONPATH: WattanapatPDF/src
+      run: |
+        # รันไฟล์ทดสอบทั้งหมดที่อยู่ในโฟลเดอร์ tests
+        pytest WattanapatPDF/tests/
+
+  build:
+    name: Build Windows Installer
+    needs: test # จะเริ่มทำงานก็ต่อเมื่อผ่านขั้นตอนการทดสอบ (test) เรียบร้อยแล้วเท่านั้น
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+        cache: "pip"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r WattanapatPDF/requirements.txt
+        pip install pyinstaller # มั่นใจว่ามี pyinstaller สำหรับคอมไพล์โค้ด
+
+    - name: Execute Build Script
       shell: cmd
+      run: |
+        cd WattanapatPDF/installer
+        call build_windows.bat
 
     - name: Upload Installer Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: WattanapatPDF-Windows-Installer
+        name: wattanapat-pdf-installer
         path: |
-          WattanapatPDF/installer/dist/
-          WattanapatPDF/dist/
-          WattanapatPDF/*.exe
-          WattanapatPDF/installer/*.exe
-          *.exe
+          WattanapatPDF/installer/Output/*.exe
+          WattanapatPDF/installer/dist/*.exe
         if-no-files-found: warn
