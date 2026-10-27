@@ -18,18 +18,17 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-file: "3.11" # หรือระบุเวอร์ชันของ Python ที่คุณใช้งานอยู่
+        python-version: "3.11" # แก้ไขจาก python-file เป็น python-version ให้ถูกต้อง
         cache: "pip"
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r WattanapatPDF/requirements.txt
-        pip install pytest flake8 black # ติดตั้งเครื่องมือสำหรับรัน test และจัดฟอร์แมตโค้ด
+        pip install pytest flake8 black
 
     - name: Lint with flake8
       run: |
-        # ตรวจสอบมาตรฐานของโค้ด (สามารถปรับแต่งกฎได้ตามต้องการ)
         flake8 WattanapatPDF/src --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 WattanapatPDF/src --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
@@ -37,12 +36,11 @@ jobs:
       env:
         PYTHONPATH: WattanapatPDF/src
       run: |
-        # รันไฟล์ทดสอบทั้งหมดที่อยู่ในโฟลเดอร์ tests
         pytest WattanapatPDF/tests/
 
   build:
     name: Build Windows Installer
-    needs: test # จะเริ่มทำงานก็ต่อเมื่อผ่านขั้นตอนการทดสอบ (test) เรียบร้อยแล้วเท่านั้น
+    needs: test
     runs-on: windows-latest
 
     steps:
@@ -52,14 +50,14 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: "3.11" # ตรวจสอบให้มั่นใจว่าเป็น python-version ทั้งสองจ็อบ
         cache: "pip"
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r WattanapatPDF/requirements.txt
-        pip install pyinstaller # มั่นใจว่ามี pyinstaller สำหรับคอมไพล์โค้ด
+        pip install pyinstaller
 
     - name: Execute Build Script
       shell: cmd
