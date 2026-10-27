@@ -18,8 +18,8 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10' # ปรับเปลี่ยนเวอร์ชันตามที่คุณใช้พัฒนาได้ (เช่น 3.10, 3.11)
-        cache: 'pip' # ช่วยให้การรันครั้งต่อๆ ไปเร็วขึ้น
+        python-version: '3.10'
+        cache: 'pip'
 
     # 3. ติดตั้ง Dependencies และตัวสร้าง Executable (PyInstaller)
     - name: Install dependencies
@@ -28,20 +28,25 @@ jobs:
         pip install pyinstaller
         if (Test-Path requirements.txt) { pip install -r requirements.txt }
 
-    # 4. เรียกใช้งานไฟล์ Batch Script สำหรับบิวด์ของโปรเจกต์
+    # 4. ติดตั้ง Inno Setup (จำเป็นมากสำหรับสคริปต์ .iss ของคุณ)
+    - name: Install Inno Setup
+      run: choco install innosetup -y
+
+    # 5. เรียกใช้งานไฟล์ Batch Script สำหรับบิวด์ของโปรเจกต์
     - name: Build Executable & Installer
       run: |
         cd installer
         .\build_windows.bat
       shell: cmd
 
-    # 5. รวบรวมไฟล์ติดตั้งส่งออกไปยังระบบดาวน์โหลด Artifacts
+    # 6. รวบรวมไฟล์ติดตั้งส่งออกไปยังระบบดาวน์โหลด Artifacts
     - name: Upload Installer Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: WattanapatPDF-Windows-Installer # ชื่อไฟล์/โฟลเดอร์ที่จะแสดงบนหน้าเว็บให้ดาวน์โหลด
+        name: WattanapatPDF-Windows-Installer
         path: |
           installer/dist/
           dist/
           *.exe
+          installer/*.exe
         if-no-files-found: warn
