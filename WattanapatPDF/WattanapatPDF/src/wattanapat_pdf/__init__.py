@@ -1,0 +1,5 @@
+"""Wattanapat PDF - offline PDF toolkit for Windows."""
+__version__ = "1.0.0"
+APP_NAME = "Wattanapat PDF"
+APP_NAME_TH = "โปรแกรมจัดการ PDF ออฟไลน์"
+APP_ORG = "Wattanapat"
